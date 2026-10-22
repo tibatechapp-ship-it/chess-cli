@@ -104,13 +104,13 @@ class Board:
             PieceType.QUEEN, PieceType.KING, PieceType.BISHOP,
             PieceType.KNIGHT, PieceType.ROOK
         ]
-        place_row(0, Color.WHITE, back)
-        place_row(7, Color.BLACK, back)
+        place_row(0, Color.BLACK, back)
+        place_row(7, Color.WHITE, back)
 
         # Pawns
         for col in range(8):
-            self._grid[1][col] = Piece(PieceType.PAWN, Color.WHITE)
-            self._grid[6][col] = Piece(PieceType.PAWN, Color.BLACK)
+            self._grid[1][col] = Piece(PieceType.PAWN, Color.BLACK)
+            self._grid[6][col] = Piece(PieceType.PAWN, Color.WHITE)
 
     # --------------------------------------------------------------------- #
     # Querying
