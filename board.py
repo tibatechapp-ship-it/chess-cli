@@ -155,8 +155,13 @@ class Board:
         validator = validators.get(piece.type)
         if validator is None or not validator(src, dst):
             raise ValueError(f"Illegal move: {piece.type.name} from {src} to {dst}")
+        captured = self.get_piece(dst)
         self.set_piece(dst, piece)
         self.set_piece(src, None)
+        if self.is_in_check(piece.color):
+            self.set_piece(src, piece)
+            self.set_piece(dst, captured)
+            raise ValueError(f"Move {src}->{dst} leaves {piece.color.name} king in check")
 
     # --------------------------------------------------------------------- #
     # FEN conversion
@@ -329,6 +334,7 @@ class Board:
 
         Raises ValueError if the FEN is malformed.
         """
+        self._grid = [[None] * 8 for _ in range(8)]
         rows = fen.strip().split("/")
         if len(rows) != 8:
             raise ValueError(f"Invalid FEN: expected 8 rows, got {len(rows)}")
