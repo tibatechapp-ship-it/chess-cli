@@ -452,6 +452,34 @@ class Board:
     def is_stalemate(self, color: Color) -> bool:
             """Return True if the given color is not in check and has no legal moves."""
             return (not self.is_in_check(color)) and len(self._legal_moves_for(color)) == 0
+
+    def game_status(self) -> str:
+            """Return the current game status.
+
+            Returns one of:
+            - 'checkmate_white'
+            - 'checkmate_black'
+            - 'stalemate_white'
+            - 'stalemate_black'
+            - 'check_white'
+            - 'check_black'
+            - 'ongoing'
+
+            Priority order: checkmate > stalemate > check > ongoing.
+            """
+            if self.is_checkmate(Color.WHITE):
+                return 'checkmate_white'
+            if self.is_checkmate(Color.BLACK):
+                return 'checkmate_black'
+            if self.is_stalemate(Color.WHITE):
+                return 'stalemate_white'
+            if self.is_stalemate(Color.BLACK):
+                return 'stalemate_black'
+            if self.is_in_check(Color.WHITE):
+                return 'check_white'
+            if self.is_in_check(Color.BLACK):
+                return 'check_black'
+            return 'ongoing'
 # --------------------------------------------------------------------------- #
 # Test suite
 # --------------------------------------------------------------------------- #
