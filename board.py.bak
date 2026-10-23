@@ -155,8 +155,13 @@ class Board:
         validator = validators.get(piece.type)
         if validator is None or not validator(src, dst):
             raise ValueError(f"Illegal move: {piece.type.name} from {src} to {dst}")
+        captured = self.get_piece(dst)
         self.set_piece(dst, piece)
         self.set_piece(src, None)
+        if self.is_in_check(piece.color):
+            self.set_piece(src, piece)
+            self.set_piece(dst, captured)
+            raise ValueError(f"Move {src}->{dst} leaves {piece.color.name} king in check")
 
     # --------------------------------------------------------------------- #
     # FEN conversion
@@ -299,6 +304,47 @@ class Board:
                         return True
         return False
 
+    def _legal_moves_for(self, color: Color) -> list:
+        """All legal moves (src, dst) for pieces of `color`."""
+        import copy
+        moves = []
+        validators = {
+            PieceType.PAWN: self._is_valid_pawn,
+            PieceType.KNIGHT: self._is_valid_knight,
+            PieceType.BISHOP: self._is_valid_bishop,
+            PieceType.ROOK: self._is_valid_rook,
+            PieceType.QUEEN: self._is_valid_queen,
+            PieceType.KING: self._is_valid_king,
+        }
+        snapshot = copy.deepcopy(self._grid)
+        try:
+            for r in range(8):
+                for c in range(8):
+                    piece = self._grid[r][c]
+                    if piece is None or piece.color != color:
+                        continue
+                    validator = validators.get(piece.type)
+                    if validator is None:
+                        continue
+                    for r2 in range(8):
+                        for c2 in range(8):
+                            if (r, c) == (r2, c2):
+                                continue
+                            if not validator((r, c), (r2, c2)):
+                                continue
+                            captured = self._grid[r2][c2]
+                            self._grid[r2][c2] = piece
+                            self._grid[r][c] = None
+                            try:
+                                if not self.is_in_check(color):
+                                    moves.append(((r, c), (r2, c2)))
+                            finally:
+                                self._grid[r][c] = piece
+                                self._grid[r2][c2] = captured
+        finally:
+            self._grid = snapshot
+        return moves
+
     def to_fen(self) -> str:
         """
         Return the board state as a FEN string (only piece placement).
@@ -329,6 +375,7 @@ class Board:
 
         Raises ValueError if the FEN is malformed.
         """
+        self._grid = [[None] * 8 for _ in range(8)]
         rows = fen.strip().split("/")
         if len(rows) != 8:
             raise ValueError(f"Invalid FEN: expected 8 rows, got {len(rows)}")
@@ -380,6 +427,23 @@ class Board:
     def __repr__(self) -> str:
         return f"<Board fen='{self.to_fen()}'>"
 
+
+    def is_in_check(self, color: Color) -> bool:
+            """Return True if the king of the given color is under attack."""
+            king_pos: Position | None = None
+            for row_idx, row in enumerate(self._grid):
+                for col_idx, piece in enumerate(row):
+                    if piece is not None and piece.type == PieceType.KING and piece.color == color:
+                        king_pos = (row_idx, col_idx)
+                        break
+                if king_pos is not None:
+                    break
+
+            if king_pos is None:
+                return False
+
+            opponent_color: Color = Color.BLACK if color == Color.WHITE else Color.WHITE
+            return self._is_square_attacked(king_pos, opponent_color)
 # --------------------------------------------------------------------------- #
 # Test suite
 # --------------------------------------------------------------------------- #

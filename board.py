@@ -444,6 +444,10 @@ class Board:
 
             opponent_color: Color = Color.BLACK if color == Color.WHITE else Color.WHITE
             return self._is_square_attacked(king_pos, opponent_color)
+
+    def is_checkmate(self, color: Color) -> bool:
+            """Return True if `color` is in check and has no legal moves."""
+            return self.is_in_check(color) and len(self._legal_moves_for(color)) == 0
 # --------------------------------------------------------------------------- #
 # Test suite
 # --------------------------------------------------------------------------- #
