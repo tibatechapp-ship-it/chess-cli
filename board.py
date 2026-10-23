@@ -265,6 +265,40 @@ class Board:
         target = self.get_piece(dst)
         return target is None or target.color != piece.color
 
+    def _is_square_attacked(self, pos: Position, by_color: Color) -> bool:
+        """Check if pos is attacked by any piece of by_color (ignoring what is on pos)."""
+        pr, pc = pos
+        for r in range(8):
+            for c in range(8):
+                piece = self._grid[r][c]
+                if piece is None or piece.color != by_color:
+                    continue
+                pt = piece.type
+                dr = pr - r
+                dc = pc - c
+                if pt == PieceType.PAWN:
+                    direction = -1 if by_color == Color.WHITE else 1
+                    if dr == direction and abs(dc) == 1:
+                        return True
+                elif pt == PieceType.KNIGHT:
+                    if (abs(dr), abs(dc)) in {(1, 2), (2, 1)}:
+                        return True
+                elif pt == PieceType.KING:
+                    if max(abs(dr), abs(dc)) == 1:
+                        return True
+                elif pt == PieceType.BISHOP:
+                    if abs(dr) == abs(dc) and dr != 0 and self._is_path_clear((r, c), pos):
+                        return True
+                elif pt == PieceType.ROOK:
+                    if (dr == 0) != (dc == 0) and self._is_path_clear((r, c), pos):
+                        return True
+                elif pt == PieceType.QUEEN:
+                    if abs(dr) == abs(dc) and dr != 0 and self._is_path_clear((r, c), pos):
+                        return True
+                    if (dr == 0) != (dc == 0) and self._is_path_clear((r, c), pos):
+                        return True
+        return False
+
     def to_fen(self) -> str:
         """
         Return the board state as a FEN string (only piece placement).
