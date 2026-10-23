@@ -1,0 +1,44 @@
+import os, sys, pathlib
+from typing import List
+
+# Adjust path to import the board module from the project root
+project_root = pathlib.Path(__file__).resolve().parents[1]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from board import Board  # type: ignore
+
+
+def _count_pieces(board: Board) -> int:
+    """Return the number of non‑None squares on the board."""
+    return sum(1 for row in board._grid for piece in row if piece is not None)
+
+
+def test_32_pieces() -> None:
+    """The initial board must contain exactly 32 pieces."""
+    board = Board()
+    assert _count_pieces(board) == 32
+
+
+def test_fen_roundtrip() -> None:
+    """Board → FEN → Board should preserve the position."""
+    original = Board()
+    fen: str = original.fen()
+    restored = Board(fen=fen)
+    assert restored.fen() == fen
+
+
+def test_white_queen_d1() -> None:
+    """White queen must be on d1 (row 7, col 3)."""
+    board = Board()
+    piece = board._grid[7][3]
+    assert piece is not None
+    assert str(piece) == "Q"
+
+
+def test_black_king_e8() -> None:
+    """Black king must be on e8 (row 0, col 4)."""
+    board = Board()
+    piece = board._grid[0][4]
+    assert piece is not None
+    assert str(piece) == "k"
