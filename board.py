@@ -79,6 +79,7 @@ class Board:
         If *fen* is provided, the board is populated from the FEN string.
         Otherwise the standard starting position is used.
         """
+        self.turn = Color.WHITE
         self._grid: List[List[Optional[Piece]]] = [
             [None for _ in range(8)] for _ in range(8)
         ]
@@ -144,6 +145,8 @@ class Board:
         piece = self.get_piece(src)
         if piece is None:
             raise ValueError(f"No piece at source position {src}")
+        if piece.color != self.turn:
+            raise ValueError(f"Not {piece.color.name}'s turn (current: {self.turn.name})")
         validators = {
             PieceType.PAWN: self._is_valid_pawn,
             PieceType.KNIGHT: self._is_valid_knight,
@@ -162,6 +165,7 @@ class Board:
             self.set_piece(src, piece)
             self.set_piece(dst, captured)
             raise ValueError(f"Move {src}->{dst} leaves {piece.color.name} king in check")
+        self.turn = Color.BLACK if self.turn == Color.WHITE else Color.WHITE
 
     # --------------------------------------------------------------------- #
     # FEN conversion
@@ -375,6 +379,7 @@ class Board:
 
         Raises ValueError if the FEN is malformed.
         """
+        self.turn = Color.WHITE
         self._grid = [[None] * 8 for _ in range(8)]
         rows = fen.strip().split("/")
         if len(rows) != 8:
