@@ -138,18 +138,23 @@ class Board:
     # --------------------------------------------------------------------- #
 
     def move_piece(self, src: Position, dst: Position) -> None:
-        """
-        Move a piece from *src* to *dst*.
-
-        The method does not perform any legality checks; it simply
-        transfers the piece.  Captures are handled by overwriting the
-        destination square.
-        """
+        """Move a piece from src to dst. Raises ValueError if illegal."""
         if not (self._is_valid_position(src) and self._is_valid_position(dst)):
             raise ValueError(f"Invalid move from {src} to {dst}")
         piece = self.get_piece(src)
         if piece is None:
             raise ValueError(f"No piece at source position {src}")
+        validators = {
+            PieceType.PAWN: self._is_valid_pawn,
+            PieceType.KNIGHT: self._is_valid_knight,
+            PieceType.BISHOP: self._is_valid_bishop,
+            PieceType.ROOK: self._is_valid_rook,
+            PieceType.QUEEN: self._is_valid_queen,
+            PieceType.KING: self._is_valid_king,
+        }
+        validator = validators.get(piece.type)
+        if validator is None or not validator(src, dst):
+            raise ValueError(f"Illegal move: {piece.type.name} from {src} to {dst}")
         self.set_piece(dst, piece)
         self.set_piece(src, None)
 
@@ -181,6 +186,84 @@ class Board:
             target = self.get_piece(dst)
             return target is not None and target.color != piece.color
         return False
+
+    def _is_path_clear(self, src: Position, dst: Position) -> bool:
+        """Check all squares strictly between src and dst are empty."""
+        rs, cs = src
+        rd, cd = dst
+        row_step = (rd > rs) - (rd < rs)
+        col_step = (cd > cs) - (cd < cs)
+        r, c = rs + row_step, cs + col_step
+        while (r, c) != (rd, cd):
+            if self.get_piece((r, c)) is not None:
+                return False
+            r += row_step
+            c += col_step
+        return True
+
+    def _is_valid_knight(self, src: Position, dst: Position) -> bool:
+        """Knight: L-shape to empty or enemy square."""
+        piece = self.get_piece(src)
+        if piece is None or piece.type != PieceType.KNIGHT:
+            return False
+        dr = abs(dst[0] - src[0])
+        dc = abs(dst[1] - src[1])
+        if (dr, dc) not in {(1, 2), (2, 1)}:
+            return False
+        target = self.get_piece(dst)
+        return target is None or target.color != piece.color
+
+    def _is_valid_bishop(self, src: Position, dst: Position) -> bool:
+        """Bishop: diagonal, clear path, empty or enemy target."""
+        piece = self.get_piece(src)
+        if piece is None or piece.type != PieceType.BISHOP:
+            return False
+        dr = abs(dst[0] - src[0])
+        dc = abs(dst[1] - src[1])
+        if dr != dc or dr == 0:
+            return False
+        target = self.get_piece(dst)
+        if target is not None and target.color == piece.color:
+            return False
+        return self._is_path_clear(src, dst)
+
+    def _is_valid_rook(self, src: Position, dst: Position) -> bool:
+        """Rook: straight line, clear path, empty or enemy target."""
+        piece = self.get_piece(src)
+        if piece is None or piece.type != PieceType.ROOK:
+            return False
+        if (src[0] == dst[0]) == (src[1] == dst[1]):
+            return False
+        target = self.get_piece(dst)
+        if target is not None and target.color == piece.color:
+            return False
+        return self._is_path_clear(src, dst)
+
+    def _is_valid_queen(self, src: Position, dst: Position) -> bool:
+        """Queen: rook or bishop movement, clear path."""
+        piece = self.get_piece(src)
+        if piece is None or piece.type != PieceType.QUEEN:
+            return False
+        dr = abs(dst[0] - src[0])
+        dc = abs(dst[1] - src[1])
+        target = self.get_piece(dst)
+        if target is not None and target.color == piece.color:
+            return False
+        if dr == dc and dr > 0:
+            return self._is_path_clear(src, dst)
+        if (src[0] == dst[0]) != (src[1] == dst[1]):
+            return self._is_path_clear(src, dst)
+        return False
+
+    def _is_valid_king(self, src: Position, dst: Position) -> bool:
+        """King: 1 square any direction to empty or enemy."""
+        piece = self.get_piece(src)
+        if piece is None or piece.type != PieceType.KING:
+            return False
+        if max(abs(dst[0] - src[0]), abs(dst[1] - src[1])) != 1:
+            return False
+        target = self.get_piece(dst)
+        return target is None or target.color != piece.color
 
     def to_fen(self) -> str:
         """
