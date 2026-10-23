@@ -448,6 +448,10 @@ class Board:
     def is_checkmate(self, color: Color) -> bool:
             """Return True if `color` is in check and has no legal moves."""
             return self.is_in_check(color) and len(self._legal_moves_for(color)) == 0
+
+    def is_stalemate(self, color: Color) -> bool:
+            """Return True if the given color is not in check and has no legal moves."""
+            return (not self.is_in_check(color)) and len(self._legal_moves_for(color)) == 0
 # --------------------------------------------------------------------------- #
 # Test suite
 # --------------------------------------------------------------------------- #
