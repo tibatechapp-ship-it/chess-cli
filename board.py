@@ -380,6 +380,23 @@ class Board:
     def __repr__(self) -> str:
         return f"<Board fen='{self.to_fen()}'>"
 
+
+    def is_in_check(self, color: Color) -> bool:
+            """Return True if the king of the given color is under attack."""
+            king_pos: Position | None = None
+            for row_idx, row in enumerate(self._grid):
+                for col_idx, piece in enumerate(row):
+                    if piece is not None and piece.type == PieceType.KING and piece.color == color:
+                        king_pos = (row_idx, col_idx)
+                        break
+                if king_pos is not None:
+                    break
+
+            if king_pos is None:
+                return False
+
+            opponent_color: Color = Color.BLACK if color == Color.WHITE else Color.WHITE
+            return self._is_square_attacked(king_pos, opponent_color)
 # --------------------------------------------------------------------------- #
 # Test suite
 # --------------------------------------------------------------------------- #
