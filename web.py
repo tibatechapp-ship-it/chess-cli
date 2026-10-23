@@ -1,50 +1,63 @@
 #!/usr/bin/env python3
 """web.py - FastAPI web UI for chess-cli."""
 import sys
+import os
+import threading
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import uvicorn
-from board import Board
+from board import Board, Color
 
 app = FastAPI()
-_state = {"board": Board(), "history": [], "turn": "w"}
+class GameState:
+    def __init__(self):
+        self.reset()
+    def reset(self):
+        self.board = Board()
+        self.history = []
+    def turn(self):
+        return "w" if self.board.turn == Color.WHITE else "b"
+
+
+_state = GameState()
+_lock = threading.Lock()
+
 
 class MoveIn(BaseModel):
     src: str
     dst: str
 
+
 def _alg_to_pos(alg):
     return (8 - int(alg[1]), ord(alg[0]) - ord('a'))
 
+
 @app.get("/api/state")
 def get_state():
-    return {"fen": _state["board"].to_fen(), "history": _state["history"], "turn": _state["turn"]}
+    with _lock:
+        return {"fen": _state.board.to_fen(), "history": _state.history, "turn": _state.turn()}
+
 
 @app.post("/api/move")
 def do_move(m: MoveIn):
-    try:
-        piece = _state["board"].get_piece(_alg_to_pos(m.src))
-        if piece is None:
-            return {"ok": False, "error": "no piece at " + m.src}
-        expected = "WHITE" if _state["turn"] == "w" else "BLACK"
-        if piece.color.name != expected:
-            return {"ok": False, "error": "not " + expected.lower() + " turn"}
-        _state["board"].move_piece(_alg_to_pos(m.src), _alg_to_pos(m.dst))
-        _state["history"].append(m.src + m.dst)
-        _state["turn"] = "b" if _state["turn"] == "w" else "w"
-        return {"ok": True, "fen": _state["board"].to_fen(), "history": _state["history"], "turn": _state["turn"]}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+    with _lock:
+        try:
+            _state.board.move_piece(_alg_to_pos(m.src), _alg_to_pos(m.dst))
+            _state.history.append(m.src + m.dst)
+            return {"ok": True, "fen": _state.board.to_fen(), "history": _state.history, "turn": _state.turn()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
 
 @app.post("/api/reset")
 def do_reset():
-    _state["board"] = Board()
-    _state["history"] = []
-    _state["turn"] = "w"
-    return {"ok": True, "fen": _state["board"].to_fen(), "history": [], "turn": "w"}
+    with _lock:
+        _state.reset()
+        return {"ok": True, "fen": _state.board.to_fen(), "history": [], "turn": _state.turn()}
+
 
 @app.get("/", response_class=HTMLResponse)
 def index():
@@ -137,4 +150,5 @@ load();
 </html>"""
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
