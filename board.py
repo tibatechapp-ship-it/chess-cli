@@ -157,6 +157,31 @@ class Board:
     # FEN conversion
     # --------------------------------------------------------------------- #
 
+    def _is_valid_pawn(self, src: Position, dst: Position) -> bool:
+        """Check if a pawn move from src to dst is legal (no en passant, no promotion)."""
+        piece = self.get_piece(src)
+        if piece is None or piece.type != PieceType.PAWN:
+            return False
+        rs, cs = src
+        rd, cd = dst
+        row_delta = rd - rs
+        col_delta = cd - cs
+        if piece.color == Color.WHITE:
+            direction = -1
+            start_row = 6
+        else:
+            direction = 1
+            start_row = 1
+        if col_delta == 0 and row_delta == direction:
+            return self.get_piece(dst) is None
+        if col_delta == 0 and row_delta == 2 * direction and rs == start_row:
+            mid = (rs + direction, cs)
+            return self.get_piece(dst) is None and self.get_piece(mid) is None
+        if abs(col_delta) == 1 and row_delta == direction:
+            target = self.get_piece(dst)
+            return target is not None and target.color != piece.color
+        return False
+
     def to_fen(self) -> str:
         """
         Return the board state as a FEN string (only piece placement).
