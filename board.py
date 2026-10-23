@@ -304,6 +304,47 @@ class Board:
                         return True
         return False
 
+    def _legal_moves_for(self, color: Color) -> list:
+        """All legal moves (src, dst) for pieces of `color`."""
+        import copy
+        moves = []
+        validators = {
+            PieceType.PAWN: self._is_valid_pawn,
+            PieceType.KNIGHT: self._is_valid_knight,
+            PieceType.BISHOP: self._is_valid_bishop,
+            PieceType.ROOK: self._is_valid_rook,
+            PieceType.QUEEN: self._is_valid_queen,
+            PieceType.KING: self._is_valid_king,
+        }
+        snapshot = copy.deepcopy(self._grid)
+        try:
+            for r in range(8):
+                for c in range(8):
+                    piece = self._grid[r][c]
+                    if piece is None or piece.color != color:
+                        continue
+                    validator = validators.get(piece.type)
+                    if validator is None:
+                        continue
+                    for r2 in range(8):
+                        for c2 in range(8):
+                            if (r, c) == (r2, c2):
+                                continue
+                            if not validator((r, c), (r2, c2)):
+                                continue
+                            captured = self._grid[r2][c2]
+                            self._grid[r2][c2] = piece
+                            self._grid[r][c] = None
+                            try:
+                                if not self.is_in_check(color):
+                                    moves.append(((r, c), (r2, c2)))
+                            finally:
+                                self._grid[r][c] = piece
+                                self._grid[r2][c2] = captured
+        finally:
+            self._grid = snapshot
+        return moves
+
     def to_fen(self) -> str:
         """
         Return the board state as a FEN string (only piece placement).
