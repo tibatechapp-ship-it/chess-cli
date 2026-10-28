@@ -1,0 +1,9 @@
+# Deliberately small, deterministic gate: pyflakes-level truth (undefined names,
+# unused imports, real syntax/whitespace errors) that fresh CI and local runs
+# agree on. No style churn on the existing codebase.
+target-version = "py311"
+line-length = 100
+exclude = [".git", "__pycache__"]
+
+[lint]
+select = ["E9", "F"]

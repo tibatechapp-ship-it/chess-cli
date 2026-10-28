@@ -13,7 +13,6 @@ is run directly.
 
 from __future__ import annotations
 
-from typing import Tuple
 
 # Import the core game logic and board representation.
 try:

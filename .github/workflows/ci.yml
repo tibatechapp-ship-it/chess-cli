@@ -35,3 +35,23 @@ jobs:
       - name: Secrets
         uses: gitleaks/gitleaks-action@v2
         continue-on-error: true
+
+  # The bootstrap test job cannot lint: it only runs ruff when a
+  # pyproject/setup.py exists (this repo has neither) and it tolerates
+  # failures with "|| true". This job is the real gate: ruff.toml selects
+  # E9+F only (undefined names, unused imports, syntax errors) so it is
+  # deterministic and adds no style churn.
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -U pip ruff
+      - name: Ruff (E9+F)
+        run: ruff check --config ruff.toml .

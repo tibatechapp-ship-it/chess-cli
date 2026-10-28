@@ -1,11 +1,9 @@
 import os
 import sys
-from typing import List
 
 # Ensure the project root is on the import path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import pytest
 from board import Board, Piece, PieceType, Color
 
 
