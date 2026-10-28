@@ -63,7 +63,8 @@ def do_reset():
 def index():
     return HTML
 
-HTML = """<!DOCTYPE html>
+# Raw string: the JS below contains \d and \u2654 escapes that belong to JS.
+HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
