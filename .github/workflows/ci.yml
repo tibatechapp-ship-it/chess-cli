@@ -26,7 +26,7 @@ jobs:
             echo "no tests directory yet - pass"
           fi
       - name: Secrets
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         continue-on-error: true
 
   # The bootstrap test job cannot lint: it only runs ruff when a
